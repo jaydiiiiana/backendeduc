@@ -2,22 +2,32 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
-    const { name, password, age, grade, verificationCode } = await req.json();
+    const { name, email, password, age, grade, verificationCode } = await req.json();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    // Check if user exists
-    const checkUser = await fetch(`${supabaseUrl}/rest/v1/users?name=ilike.${name}&select=*`, {
+    // 1. Mandatory Input Validation
+    if (!name || !email || !password || !age || !verificationCode) {
+      return NextResponse.json({ error: "Missing required fields! 😿" }, { status: 400 });
+    }
+
+    if (!email.endsWith("@educ.ph")) {
+      return NextResponse.json({ error: "Access Denied: Only @educ.ph emails are allowed. 🏫" }, { status: 403 });
+    }
+
+    // Check if user or email exists
+    const checkUser = await fetch(`${supabaseUrl}/rest/v1/users?or=(name.ilike.${name},email.eq.${email})&select=*`, {
       headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
     });
     const users = await checkUser.json();
 
     if (users && users.length > 0) {
-      return NextResponse.json({ error: "Username taken! 😿" }, { status: 400 });
+      const conflict = users[0].name.toLowerCase() === name.toLowerCase() ? "username" : "email";
+      return NextResponse.json({ error: `That ${conflict} is already taken! 😿` }, { status: 400 });
     }
 
-    // 1. Verify Code and Determine Role
-    let role = "Student"; // Default if not using strict codes
+    // 2. Verify Code and Determine Role
+    let role = "Student";
     let creatorId = null;
     let expirationDate = null;
 
@@ -28,23 +38,23 @@ export async function POST(req) {
       const codeRes = await fetch(`${supabaseUrl}/rest/v1/registration_codes?code=eq.${verificationCode}&is_used=eq.false&created_at=gte.${oneDayAgo.toISOString()}&select=*`, {
         headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
       });
-      const [invite] = await codeRes.json();
+      const inviteData = await codeRes.json();
+      const invite = inviteData[0];
       
       if (!invite) {
         return NextResponse.json({ error: "Invalid or expired verification code! 😿" }, { status: 400 });
       }
       
       role = invite.role_to_grant;
-      creatorId = invite.created_by; // This links the user to their creator/school
+      creatorId = invite.created_by;
 
-      // Calculate expiration date
       if (invite.duration_months && invite.duration_months > 0) {
         const now = new Date();
         now.setMonth(now.getMonth() + invite.duration_months);
         expirationDate = now.toISOString();
       }
 
-      // 2. Mark code as used
+      // Mark code as used
       await fetch(`${supabaseUrl}/rest/v1/registration_codes?id=eq.${invite.id}`, {
         method: "PATCH",
         headers: { 
@@ -55,7 +65,7 @@ export async function POST(req) {
         body: JSON.stringify({ is_used: true })
       });
 
-      // 3. Automatically generate a replacement code for the same role/creator
+      // Automatically generate a replacement code
       const newCodeStr = "CODE-" + Math.random().toString(36).substr(2, 6).toUpperCase();
       await fetch(`${supabaseUrl}/rest/v1/registration_codes`, {
         method: "POST",
@@ -71,20 +81,18 @@ export async function POST(req) {
           is_used: false 
         })
       });
-    } else {
-      // In strict mode, we could reject registrations without a code
-      // return NextResponse.json({ error: "Verification code required! 🎓" }, { status: 400 });
     }
 
     // Insert new user
     const newUser = {
       name,
+      email,
       password,
       age: parseInt(age) || 0,
       grade,
       role: role,
-      invited_by: creatorId, // Keep track of who invited them
-      subscription_expires_at: expirationDate, // Subscription control
+      invited_by: creatorId,
+      subscription_expires_at: expirationDate,
       exp: 0,
       level: 1,
       created_at: new Date().toISOString()
