@@ -21,19 +21,22 @@ export async function GET() {
     const allUsers = Array.isArray(users) ? users : [];
     const allSubjects = Array.isArray(subjects) ? subjects : [];
 
-    // Count students (with role column, or assume all non-teachers are students)
-    const students = allUsers.filter(u => !u.role || u.role === 'Student');
-    const total = students.length;
+    // Count users by role
+    const totalUsers = allUsers.length;
+    const totalSchools = allUsers.filter(u => u.role === 'Headmaster').length;
+    const totalTeachers = allUsers.filter(u => u.role === 'Teacher').length;
+    const totalStudents = allUsers.filter(u => !u.role || u.role === 'Student').length;
     const totalSubjects = allSubjects.length;
 
-    // Success rate: users with level >= 2
-    const graduated = students.filter(u => u.level >= 2).length;
-    const successRate = total > 0 ? Math.round((graduated / total) * 100) : 95;
+    // Success rate: students with level >= 2
+    const graduated = allUsers.filter(u => (!u.role || u.role === 'Student') && u.level >= 2).length;
+    const successRate = totalStudents > 0 ? Math.round((graduated / totalStudents) * 100) : 95;
 
     return Response.json({ 
-      total: total || 2,           // Minimum 2 so it doesn't look empty
+      totalUsers: totalUsers || 2,           
+      totalSchools: totalSchools || 1,
       totalSubjects: totalSubjects || 5,  
-      successRate: successRate || 95  // Show 95% if no data yet
+      successRate: successRate || 95  
     });
   } catch (error) {
     // Fallback: show nice sample numbers
