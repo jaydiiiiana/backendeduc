@@ -118,7 +118,17 @@ export async function POST(req) {
       body: JSON.stringify(newUser)
     });
     
-    const [insertedUser] = await insertResponse.json();
+    const insertData = await insertResponse.json();
+    
+    if (!insertResponse.ok) {
+      console.error("Supabase Insert Error:", insertData);
+      return NextResponse.json({ 
+        error: "Database error during registration! 😿", 
+        details: insertData.message || "Unknown schema error" 
+      }, { status: insertResponse.status });
+    }
+
+    const insertedUser = Array.isArray(insertData) ? insertData[0] : insertData;
 
     return NextResponse.json({ success: true, user: insertedUser });
   } catch (error) {
