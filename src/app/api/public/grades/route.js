@@ -23,31 +23,45 @@ export async function GET(req) {
       return NextResponse.json({ error: "Invalid code! 😿" }, { status: 404 });
     }
 
-    // 2. Resolve the Headmaster ID (The owner of the school structure)
-    const creatorId = invite.created_by;
-    const creatorRes = await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${creatorId}&select=id,role,invited_by`, {
-      headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
-    });
-    const [creator] = await creatorRes.json();
-    
-    if (!creator) {
-      return NextResponse.json({ error: "Code creator not found! 😿" }, { status: 404 });
+    // 2. Resolve the School Structure owner (Hierarchical Lookup)
+    let currentId = invite.created_by;
+    let finalGrades = [];
+    let hops = 0;
+
+    while (hops < 3) {
+      console.log(`[GradeFetch] Checking structure for UserID: ${currentId} (Hop ${hops})`);
+      const res = await fetch(`${supabaseUrl}/rest/v1/school_grades?headmaster_id=eq.${currentId}&select=*,school_sections(*)`, {
+        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          finalGrades = data;
+          console.log(`[GradeFetch] Found ${data.length} grades for ID: ${currentId}`);
+          break;
+        }
+      }
+
+      // If no grades found at this level, move up the chain
+      const userRes = await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${currentId}&select=invited_by`, {
+        headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
+      });
+      const userData = await userRes.json();
+      const user = Array.isArray(userData) ? userData[0] : userData;
+      
+      if (!user || !user.invited_by) {
+        console.log(`[GradeFetch] No parent found for ID: ${currentId}. Stopping.`);
+        break;
+      }
+      
+      currentId = user.invited_by;
+      hops++;
     }
 
-    let headmasterId = creator.id;
-    if (creator.role === 'Teacher') {
-      headmasterId = creator.invited_by; // Teachers are invited by Headmasters
-    }
-
-    // 3. Fetch Grades and Sections for this Headmaster
-    const gradesRes = await fetch(`${supabaseUrl}/rest/v1/school_grades?headmaster_id=eq.${headmasterId}&select=*,school_sections(*)`, {
-      headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
-    });
-    const grades = await gradesRes.json();
-
-    return NextResponse.json(grades);
+    return NextResponse.json(finalGrades);
   } catch (error) {
-    console.error(error);
+    console.error("[GradeFetch] Critical Error:", error);
     return NextResponse.json({ error: "Failed to fetch grades! 😿" }, { status: 500 });
   }
 }
