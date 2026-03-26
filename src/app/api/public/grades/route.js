@@ -12,7 +12,7 @@ export async function GET(req) {
       return NextResponse.json({ error: "Verification code required! 🐈" }, { status: 400 });
     }
 
-    // 1. Find the Headmaster associated with the code
+    // 1. Find the code details
     const codeRes = await fetch(`${supabaseUrl}/rest/v1/registration_codes?code=eq.${verificationCode}&select=*`, {
       headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
     });
@@ -23,9 +23,23 @@ export async function GET(req) {
       return NextResponse.json({ error: "Invalid code! 😿" }, { status: 404 });
     }
 
-    const headmasterId = invite.created_by;
+    // 2. Resolve the Headmaster ID (The owner of the school structure)
+    const creatorId = invite.created_by;
+    const creatorRes = await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${creatorId}&select=id,role,invited_by`, {
+      headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
+    });
+    const [creator] = await creatorRes.json();
+    
+    if (!creator) {
+      return NextResponse.json({ error: "Code creator not found! 😿" }, { status: 404 });
+    }
 
-    // 2. Fetch Grades and Sections for this Headmaster
+    let headmasterId = creator.id;
+    if (creator.role === 'Teacher') {
+      headmasterId = creator.invited_by; // Teachers are invited by Headmasters
+    }
+
+    // 3. Fetch Grades and Sections for this Headmaster
     const gradesRes = await fetch(`${supabaseUrl}/rest/v1/school_grades?headmaster_id=eq.${headmasterId}&select=*,school_sections(*)`, {
       headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
     });
