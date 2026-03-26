@@ -22,30 +22,85 @@ export async function POST(req) {
     const adminEmail = process.env.ADMIN_EMAIL || "risingtechinnovations@gmail.com";
 
     const htmlContent = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #fafaf9;">
-        <h2 style="color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px;">🏛️ New Enrollment Meeting Request</h2>
-        <p style="font-size: 16px; color: #475569;">A school has requested an onboarding session via Cat Academy.</p>
-        
-        <div style="background-color: white; padding: 20px; border-radius: 8px; margin-top: 20px;">
-          <p><strong>🏫 School:</strong> ${schoolName}</p>
-          <p><strong>👤 Representative:</strong> ${contactPerson}</p>
-          <p><strong>📧 Email:</strong> ${contactEmail}</p>
-          <p><strong>📞 Phone:</strong> ${contactPhone}</p>
-          <p><strong>💎 Plan Selected:</strong> ${planName || "Trial"}</p>
-          <p><strong>📅 Preferred Date:</strong> ${preferredDate}</p>
-          <p><strong>🕒 Preferred Time:</strong> ${preferredTime}</p>
-          <p><strong>💻 Meeting Type:</strong> ${meetingType}</p>
-        </div>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          .email-container { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fafaf9; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; }
+          .header { background-color: #1e40af; padding: 40px 20px; text-align: center; color: white; }
+          .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; }
+          .content { padding: 40px; background-color: white; }
+          .info-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px; }
+          .info-item { border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+          .label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+          .value { font-size: 16px; font-weight: 600; color: #1e293b; }
+          .badge { display: inline-block; background-color: #f59e0b; color: white; padding: 4px 12px; border-radius: 99px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-top: 5px; }
+          .footer { background-color: #f8fafc; padding: 30px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+          .notes-box { background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 8px; margin-top: 30px; }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="header">
+            <p style="font-size: 10px; font-weight: 800; opacity: 0.8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 3px;">Institutional Onboarding</p>
+            <h1>Enrollment Request</h1>
+          </div>
+          
+          <div class="content">
+            <p style="color: #64748b; margin-bottom: 30px; font-weight: 500;">A new institution has requested an academic onboarding session. Below are the registered details:</p>
+            
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="label">Institution Name</div>
+                <div class="value">${schoolName}</div>
+              </div>
+              <div class="info-item">
+                <div class="label">Contact Representative</div>
+                <div class="value">${contactPerson}</div>
+              </div>
+              <div class="info-item" style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                   <div class="label">Official Email</div>
+                   <div class="value">${contactEmail}</div>
+                </div>
+                <div style="flex: 1;">
+                   <div class="label">Phone Number</div>
+                   <div class="value">${contactPhone}</div>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="label">Selected Tier</div>
+                <div class="badge">${planName || "Trial"}</div>
+              </div>
+              <div class="info-item" style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                   <div class="label">Meeting Date</div>
+                   <div class="value">${preferredDate}</div>
+                </div>
+                <div style="flex: 1;">
+                   <div class="label">Preferred Time</div>
+                   <div class="value">${preferredTime}</div>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="label">Meeting Environment</div>
+                <div class="value">${meetingType === 'Zoom' ? '💻 Online Conference (Zoom)' : '🤝 Personal Consultation'}</div>
+              </div>
+            </div>
 
-        <div style="margin-top: 20px; padding: 15px; background-color: #f1f5f9; border-radius: 8px;">
-          <p><strong>📝 Preparation Notes:</strong></p>
-          <p style="font-style: italic;">${notes || "No additional notes provided."}</p>
-        </div>
+            <div class="notes-box">
+              <div class="label" style="color: #b45309;">Preparation & Requirements</div>
+              <div class="value" style="font-style: italic; color: #92400e; font-weight: 500;">"${notes || "None provided."}"</div>
+            </div>
+          </div>
 
-        <p style="margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center;">
-          © 2026 Cat Academy Project • Institutional Onboarding System
-        </p>
-      </div>
+          <div class="footer">
+            <p><strong>Cat Academy Project</strong> • Advanced Learning Management</p>
+            <p style="margin-top: 5px;">This is an automated institutional notification.</p>
+          </div>
+        </div>
+      </body>
+      </html>
     `;
 
     const result = await sendEmail({
