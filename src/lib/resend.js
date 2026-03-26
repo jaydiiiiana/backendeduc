@@ -13,13 +13,13 @@ export const sendEmail = async ({ to, subject, html }) => {
     });
 
     if (error) {
-      console.error('Resend Error:', error);
+      console.error('RESEND SERVICE ERROR Details:', JSON.stringify(error, null, 2));
       return { success: false, error };
     }
 
     return { success: true, data };
   } catch (err) {
-    console.error('Email caught error:', err);
-    return { success: false, error: err.message };
+    console.error('RESEND EXCEPTION Caught:', err);
+    return { success: false, error: { message: err.message, name: err.name } };
   }
 };

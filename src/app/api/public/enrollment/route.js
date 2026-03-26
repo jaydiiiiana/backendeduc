@@ -19,7 +19,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing required contact or meeting details! 😿" }, { status: 400 });
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || "risingtechinnovations@gmail.com";
+    const adminEmail = process.env.ADMIN_EMAIL || "jaydiiii331@gmail.com";
 
     if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_placeholder') {
       console.error("Missing RESEND_API_KEY!");
