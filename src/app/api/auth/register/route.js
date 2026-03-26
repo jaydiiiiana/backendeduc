@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendEmail } from "@/lib/resend";
 
 export async function POST(req) {
   try {
@@ -129,6 +130,42 @@ export async function POST(req) {
     }
 
     const insertedUser = Array.isArray(insertData) ? insertData[0] : insertData;
+
+    // Send Welcome Email
+    try {
+      await sendEmail({
+        to: email,
+        subject: `Welcome to the Academy, ${name}! 🎓🐾`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #fafaf9;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h1 style="color: #1e40af; margin: 0;">Cat Academy 🏛️</h1>
+              <p style="color: #64748b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">Official Scholarly Welcome</p>
+            </div>
+            
+            <p>Salutations, <strong>${name}</strong>!</p>
+            <p>Your enrollment as our newest <strong>${role}</strong> has been officially recognized. We are honored to have your curious spirit join our academic community.</p>
+            
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #f1f5f9;">
+              <p style="margin: 0; color: #1e40af; font-weight: bold;">Next Scholarly Steps:</p>
+              <ul style="color: #475569; padding-left: 20px; margin-top: 10px;">
+                <li>Access your ${role === 'Student' ? 'Scholar' : 'Faculty'} Dashboard</li>
+                <li>Participate in curriculum discussions</li>
+                <li>Earn honors and EXP to climb the ranks</li>
+              </ul>
+            </div>
+
+            <p>Excellence begins here. We look forward to your contributions.</p>
+
+            <p style="margin-top: 40px; font-size: 12px; color: #94a3b8; text-align: center;">
+              © 2026 Cat Academy Project • Licensed Academic Platform
+            </p>
+          </div>
+        `
+      });
+    } catch (e) {
+      console.error("Welcome email failed, but user was created:", e);
+    }
 
     return NextResponse.json({ success: true, user: insertedUser });
   } catch (error) {
