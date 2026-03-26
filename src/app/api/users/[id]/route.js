@@ -26,7 +26,7 @@ export async function PATCH(req, { params }) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const { role, grade, section, isVerified, requesterId } = body;
+    const { role, grade, isVerified, requesterId } = body;
 
     // --- Authorization checks ---
     if (!requesterId) {
@@ -67,7 +67,6 @@ export async function PATCH(req, { params }) {
     const updateData = {};
     if (role) updateData.role = role;
     if (grade) updateData.grade = grade;
-    if (section) updateData.section = section;
     if (isVerified !== undefined) updateData.is_verified = isVerified;
 
     const { data: updatedUser, error: updateError } = await supabase
