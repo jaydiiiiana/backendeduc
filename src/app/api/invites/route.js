@@ -14,14 +14,14 @@ export async function GET(req) {
     
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // 1. Delete Expired Codes (Lazy Cleanup)
+    // 1. Delete Expired Codes (Lazy Cleanup - now 30 days)
     await supabase
       .from("registration_codes")
       .delete()
-      .lt("created_at", oneDayAgo.toISOString())
+      .lt("created_at", thirtyDaysAgo.toISOString())
       .eq("is_used", false);
 
     // 2. Fetch Active Codes

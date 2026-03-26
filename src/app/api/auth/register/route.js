@@ -39,10 +39,10 @@ export async function POST(req) {
     let expirationDate = null;
 
     if (verificationCode) {
-      const oneDayAgo = new Date();
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const codeRes = await fetch(`${supabaseUrl}/rest/v1/registration_codes?code=eq.${verificationCode}&is_used=eq.false&created_at=gte.${oneDayAgo.toISOString()}&select=*`, {
+      const codeRes = await fetch(`${supabaseUrl}/rest/v1/registration_codes?code=eq.${verificationCode}&is_used=eq.false&created_at=gte.${thirtyDaysAgo.toISOString()}&select=*`, {
         headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
       });
       const inviteData = await codeRes.json();
