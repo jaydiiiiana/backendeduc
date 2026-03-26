@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
-    const { name, email, password, age, grade, verificationCode, school, nickname } = await req.json();
+    const { name, email, password, grade, verificationCode, school, nickname } = await req.json();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     // 1. Mandatory Input Validation
-    if (!name || !email || !password || !age || !verificationCode) {
+    if (!name || !email || !password || !verificationCode) {
       return NextResponse.json({ error: "Missing required fields! 😿" }, { status: 400 });
     }
 
@@ -97,9 +97,9 @@ export async function POST(req) {
       password,
       nickname: nickname || name,
       school: school || "N/A",
-      age: parseInt(age) || 0,
       grade,
       role: role,
+      is_verified: false,
       invited_by: creatorId,
       subscription_expires_at: expirationDate,
       exp: 0,

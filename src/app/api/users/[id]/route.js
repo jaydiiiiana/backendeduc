@@ -26,7 +26,7 @@ export async function PATCH(req, { params }) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const { role, grade, section, requesterId } = body;
+    const { role, grade, section, isVerified, requesterId } = body;
 
     // --- Authorization checks ---
     if (!requesterId) {
@@ -40,8 +40,13 @@ export async function PATCH(req, { params }) {
       .eq("id", requesterId)
       .single();
 
-    if (reqError || !requester || requester.role !== "Headmaster") {
-      return NextResponse.json({ error: "Only the Headmaster can modify user data." }, { status: 403 });
+    if (reqError || !requester || (requester.role !== "Headmaster" && requester.role !== "Teacher")) {
+      return NextResponse.json({ error: "Only Headmasters and Teachers can modify student data." }, { status: 403 });
+    }
+
+    // Role changes are Headmaster-only
+    if (role && requester.role !== "Headmaster") {
+        return NextResponse.json({ error: "Only the Headmaster can change user roles." }, { status: 403 });
     }
 
     // Protection: Cannot change self role or target another headmaster
@@ -63,6 +68,7 @@ export async function PATCH(req, { params }) {
     if (role) updateData.role = role;
     if (grade) updateData.grade = grade;
     if (section) updateData.section = section;
+    if (isVerified !== undefined) updateData.is_verified = isVerified;
 
     const { data: updatedUser, error: updateError } = await supabase
       .from("users")
