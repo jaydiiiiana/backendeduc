@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
-    const { name, email, password, age, grade, verificationCode } = await req.json();
+    const { name, email, password, age, grade, verificationCode, school, nickname } = await req.json();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -13,6 +13,13 @@ export async function POST(req) {
 
     if (!email.endsWith("@educ.ph")) {
       return NextResponse.json({ error: "Access Denied: Only @educ.ph emails are allowed. 🏫" }, { status: 403 });
+    }
+
+    // Password complexity check
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    if (password.length < 8 || !hasUpper || !hasLower) {
+      return NextResponse.json({ error: "Password must be at least 8 characters and include BOTH uppercase and lowercase letters. 🛡️" }, { status: 400 });
     }
 
     // Check if user or email exists
@@ -88,6 +95,8 @@ export async function POST(req) {
       name,
       email,
       password,
+      nickname: nickname || name,
+      school: school || "N/A",
       age: parseInt(age) || 0,
       grade,
       role: role,
