@@ -55,12 +55,13 @@ export async function POST(req) {
     });
 
     if (!result.success) {
-      throw new Error(result.error);
+      console.error("Resend specific error:", result.error);
+      return NextResponse.json({ error: `Email service failure: ${result.error?.message || "Check API Key and Domain verification"}` }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: "Request received! 🐾" });
   } catch (error) {
-    console.error("Enrollment API Error:", error);
-    return NextResponse.json({ error: "Failed to process enrollment request! 😿" }, { status: 500 });
+    console.error("Enrollment API Catch-all Error:", error);
+    return NextResponse.json({ error: `Internal error: ${error.message}` }, { status: 500 });
   }
 }
