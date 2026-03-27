@@ -26,22 +26,34 @@ export async function PATCH(req, { params }) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const { role, grade, isVerified, requesterId } = body;
+    const { role, grade, isVerified, requesterId, exp, level } = body;
 
     // --- Authorization checks ---
     if (!requesterId) {
       return NextResponse.json({ error: "Unauthorized: No requester ID provided." }, { status: 401 });
     }
 
-    // Verify requester is a Headmaster
+    // Fetch requester
     const { data: requester, error: reqError } = await supabase
       .from("users")
       .select("role")
       .eq("id", requesterId)
       .single();
 
-    if (reqError || !requester || (requester.role !== "Headmaster" && requester.role !== "Teacher")) {
-      return NextResponse.json({ error: "Only Headmasters and Teachers can modify student data." }, { status: 403 });
+    if (reqError || !requester) {
+      return NextResponse.json({ error: "User not found!" }, { status: 404 });
+    }
+
+    const isFaculty = requester.role === "Headmaster" || requester.role === "Teacher";
+    const isSelf = String(requesterId) === String(id);
+
+    if (!isFaculty && !isSelf) {
+       return NextResponse.json({ error: "Forbidden: You cannot modify this user." }, { status: 403 });
+    }
+
+    // Role, Grade, and Verification changes are Faculty-only
+    if ((role || grade || isVerified !== undefined) && !isFaculty) {
+       return NextResponse.json({ error: "Only Headmasters or Teachers can modify registration status." }, { status: 403 });
     }
 
     // Role changes are Headmaster-only
@@ -65,9 +77,17 @@ export async function PATCH(req, { params }) {
 
     // --- Perform the update ---
     const updateData = {};
-    if (role) updateData.role = role;
-    if (grade) updateData.grade = grade;
-    if (isVerified !== undefined) updateData.is_verified = isVerified;
+    if (isFaculty) {
+       if (role) updateData.role = role;
+       if (grade) updateData.grade = grade;
+       if (isVerified !== undefined) updateData.is_verified = isVerified;
+    }
+    
+    // Anyone (including self) can update their own EXP/Level if they are the owner
+    if (isSelf || isFaculty) {
+       if (exp !== undefined) updateData.exp = exp;
+       if (level !== undefined) updateData.level = level;
+    }
 
     const { data: updatedUser, error: updateError } = await supabase
       .from("users")
