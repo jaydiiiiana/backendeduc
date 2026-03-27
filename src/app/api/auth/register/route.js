@@ -56,6 +56,11 @@ export async function POST(req) {
       role = invite.role_to_grant;
       creatorId = invite.created_by;
 
+      // New Rule: If registering as a Headmaster, they MUST provide a school name
+      if (role === 'Headmaster' && (!school || school === "N/A")) {
+        return NextResponse.json({ error: "Headmasters must register their school name! 🏫" }, { status: 400 });
+      }
+
       if (invite.duration_months && invite.duration_months > 0) {
         const now = new Date();
         now.setMonth(now.getMonth() + invite.duration_months);

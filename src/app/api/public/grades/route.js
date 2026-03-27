@@ -23,6 +23,13 @@ export async function GET(req) {
       return NextResponse.json({ error: "Invalid code! 😿" }, { status: 404 });
     }
 
+    // 1b. Get Creator's role to verify authority
+    const creatorRes = await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${invite.created_by}&select=role`, {
+      headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
+    });
+    const creators = await creatorRes.json();
+    const creatorRole = creators[0]?.role || "Unknown";
+
     // 2. Resolve the School Structure owner (Hierarchical Lookup)
     let currentId = invite.created_by;
     let finalGrades = [];
@@ -59,7 +66,11 @@ export async function GET(req) {
       hops++;
     }
 
-    return NextResponse.json(finalGrades);
+    return NextResponse.json({ 
+      grades: finalGrades, 
+      role_to_grant: invite.role_to_grant,
+      creator_role: creatorRole
+    });
   } catch (error) {
     console.error("[GradeFetch] Critical Error:", error);
     return NextResponse.json({ error: "Failed to fetch grades! 😿" }, { status: 500 });

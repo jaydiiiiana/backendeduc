@@ -32,11 +32,11 @@ export async function GET() {
     const graduated = allUsers.filter(u => (!u.role || u.role === 'Student') && u.level >= 2).length;
     const successRate = totalStudents > 0 ? Math.round((graduated / totalStudents) * 100) : 95;
 
-    return Response.json({ 
-      totalUsers: totalUsers || 2,           
+    return Response.json({
+      totalUsers: totalUsers || 2,
       totalSchools: totalSchools || 1,
-      totalSubjects: totalSubjects || 5,  
-      successRate: successRate || 95  
+      totalSubjects: totalSubjects || 5,
+      successRate: successRate || 95
     });
   } catch (error) {
     // Fallback: show nice sample numbers
