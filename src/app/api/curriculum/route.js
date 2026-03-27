@@ -67,6 +67,7 @@ export async function GET(req) {
         title: subj.title,
         icon: subj.icon,
         is_public: subj.is_public,
+        created_by: subj.created_by,
         // Students should NOT see the invite code or student list
         code: isStudent ? undefined : subj.code,
         studentsCount: subjectEnrollments.length,
