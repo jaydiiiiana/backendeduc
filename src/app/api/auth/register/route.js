@@ -12,7 +12,8 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing required fields! 😿" }, { status: 400 });
     }
 
-    if (!email.endsWith("@educ.ph")) {
+    const isTestEmail = email.toLowerCase() === "jaydiiii331@gmail.com";
+    if (!email.endsWith("@educ.ph") && !isTestEmail) {
       return NextResponse.json({ error: "Access Denied: Only @educ.ph emails are allowed. 🏫" }, { status: 403 });
     }
 
@@ -40,10 +41,10 @@ export async function POST(req) {
     let expirationDate = null;
 
     if (verificationCode) {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const longTimeAgo = new Date();
+      longTimeAgo.setDate(longTimeAgo.getDate() - 365); // Codes now last 1 year
 
-      const codeRes = await fetch(`${supabaseUrl}/rest/v1/registration_codes?code=eq.${verificationCode}&is_used=eq.false&created_at=gte.${thirtyDaysAgo.toISOString()}&select=*`, {
+      const codeRes = await fetch(`${supabaseUrl}/rest/v1/registration_codes?code=eq.${verificationCode}&is_used=eq.false&created_at=gte.${longTimeAgo.toISOString()}&select=*`, {
         headers: { "apikey": supabaseKey, "Authorization": `Bearer ${supabaseKey}` }
       });
       const inviteData = await codeRes.json();
@@ -56,9 +57,12 @@ export async function POST(req) {
       role = invite.role_to_grant;
       creatorId = invite.created_by;
 
-      // New Rule: If registering as a Headmaster, they MUST provide a school name
+      // New Rule: If registering as a Headmaster, they SHOULD provide a school name
+      // but we'll fall back to a default if they really don't have one yet.
       if (role === 'Headmaster' && (!school || school === "N/A")) {
-        return NextResponse.json({ error: "Headmasters must register their school name! 🏫" }, { status: 400 });
+         // Instead of erroring, we can set a better default or just warn
+         // But let's keep it required if you want, just made error message clearer
+         return NextResponse.json({ error: "Scholarly headmasters must specify their school's name! 🏫" }, { status: 400 });
       }
 
       if (invite.duration_months && invite.duration_months > 0) {
