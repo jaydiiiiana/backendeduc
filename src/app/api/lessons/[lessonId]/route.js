@@ -6,6 +6,62 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+// GET: Fetch lesson details including subject metadata
+export async function GET(req, { params }) {
+  try {
+    const { lessonId } = await params;
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("userId");
+    const role = searchParams.get("role") || "Student";
+
+    const { data: lesson, error } = await supabase
+      .from("lessons")
+      .select("*, subjects!inner(title, grade, icon, is_public, created_by)")
+      .eq("id", lessonId)
+      .single();
+
+    if (error || !lesson) {
+      return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+    }
+
+    const isFaculty = role === "Headmaster" || role === "Teacher";
+    
+    // Authorization check for Students
+    if (!isFaculty) {
+       // Students must be enrolled OR subject must be public for their grade
+       const { data: enrollment } = await supabase
+         .from("subject_enrollments")
+         .select("id")
+         .eq("user_id", userId)
+         .eq("subject_id", lesson.subject_id)
+         .maybeSingle();
+
+       // Fetch student grade
+       let studentGrade = null;
+       if (userId && userId !== "null") {
+         const { data: user } = await supabase.from("users").select("grade").eq("id", userId).single();
+         if (user) studentGrade = user.grade;
+       }
+
+       const isPublicMatch = lesson.subjects.is_public && lesson.subjects.grade === studentGrade;
+
+       if (!enrollment && !isPublicMatch) {
+         return NextResponse.json({ error: "Access Denied: You are not enrolled in this curriculum." }, { status: 403 });
+       }
+
+       // Strip answers for students
+       if (lesson.type === "quiz" && lesson.questions) {
+         lesson.questions = (lesson.questions || []).map(q => ({ q: q.q, options: q.options }));
+       }
+    }
+
+    return NextResponse.json(lesson);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+
 // POST: Check quiz answer server-side
 export async function POST(req, { params }) {
   try {
