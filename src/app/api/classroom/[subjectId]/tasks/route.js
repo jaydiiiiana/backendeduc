@@ -20,7 +20,8 @@ export async function POST(req, { params }) {
     const { data: requester } = await supabase.from("users").select("role").eq("id", userId).single();
     if (!requester) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    const { data: subject } = await supabase.from("subjects").select("created_by").eq("id", subjectId).single();
+    const { data: subject } = await supabase.from("subjects").select("created_by, grade, title").eq("id", subjectId).single();
+    if (!subject) return NextResponse.json({ error: "Subject not found" }, { status: 404 });
     
     const isAuthorized = requester.role === "Headmaster" || (subject && subject.created_by == userId);
     if (!isAuthorized) {
